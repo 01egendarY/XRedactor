@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/XRedactor/XRedactor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/XRedactor.Tests/XRedactor.Tests.csproj" />
+  </Folder>
+</Solution>

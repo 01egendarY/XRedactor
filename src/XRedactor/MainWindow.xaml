@@ -1,0 +1,274 @@
+<Window x:Class="XRedactor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="XRedactor" Height="820" Width="1280" MinHeight="640" MinWidth="960"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource AppBackground}"
+        FontFamily="Segoe UI" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid>
+        <Grid x:Name="HomeView">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{StaticResource PanelBackground}" Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="XRedactor" FontSize="27" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryText}" />
+                        <TextBlock Text="мысли на бумаге и в пространстве" Margin="0,4,0,20"
+                                   Foreground="{StaticResource SecondaryText}" />
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="+  Новый документ" Background="{StaticResource Accent}"
+                            HorizontalContentAlignment="Left" FontWeight="SemiBold" Click="ShowCreateDialog_Click" />
+                    <ListBox x:Name="DocumentList" Grid.Row="2" Margin="0,16,0,12"
+                             Background="Transparent" BorderThickness="0" Foreground="{StaticResource PrimaryText}"
+                             MouseDoubleClick="DocumentList_MouseDoubleClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="10" Margin="0,2" Background="#2A2830" CornerRadius="6" Width="235">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding Kind}" Foreground="{StaticResource SecondaryText}" />
+                                            <TextBlock Text="  ·  " Foreground="{StaticResource SecondaryText}" />
+                                            <TextBlock Text="{Binding ModifiedUtc, StringFormat={}{0:dd.MM.yyyy HH:mm}}"
+                                                       Foreground="{StaticResource SecondaryText}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <Button Content="Открыть" Click="OpenSelected_Click" />
+                        <Button Content="Удалить" Click="DeleteSelected_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Column="1" Margin="70">
+                <StackPanel VerticalAlignment="Center" MaxWidth="650">
+                    <TextBlock Text="Один лист или целый мир?" Foreground="{StaticResource PrimaryText}"
+                               FontSize="40" FontWeight="Light" />
+                    <TextBlock Margin="0,18,0,0" FontSize="18" LineHeight="29" TextWrapping="Wrap"
+                               Foreground="{StaticResource SecondaryText}">
+                        Создайте спокойный блокнот для списка дел или откройте плоскость для больших записей,
+                        схем, фигур и нескольких соединённых холстов.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,30,0,0">
+                        <Button Content="Создать документ" Background="{StaticResource Accent}"
+                                FontSize="16" Click="ShowCreateDialog_Click" />
+                        <TextBlock x:Name="StorageLocationText" VerticalAlignment="Center" Margin="18,0,0,0"
+                                   Foreground="{StaticResource SecondaryText}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <Grid x:Name="EditorView" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="62" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Background="{StaticResource PanelBackground}" BorderBrush="#393640" BorderThickness="0,0,0,1">
+                <Grid Margin="12,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Content="←  Документы" Click="BackToHome_Click" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0">
+                        <TextBlock x:Name="EditorTitle" Foreground="{StaticResource PrimaryText}"
+                                   FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock x:Name="EditorKindLabel" Foreground="{StaticResource SecondaryText}" FontSize="12" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="SaveStatusText" Text="Сохранено" Foreground="{StaticResource SecondaryText}"
+                                   VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="Сохранить  Ctrl+S" Background="{StaticResource Accent}" Click="Save_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{StaticResource PanelBackground}" Padding="14">
+                    <Grid>
+                        <StackPanel x:Name="NotebookToolbar" Visibility="Collapsed">
+                            <TextBlock Text="Режим" Foreground="{StaticResource SecondaryText}" Margin="6,4,0,8" />
+                            <Button Content="Текст" Tag="Text" Click="NotebookMode_Click" />
+                            <Button Content="Перо" Tag="Ink" Click="NotebookMode_Click" />
+                            <Button Content="Ластик" Tag="Erase" Click="NotebookMode_Click" />
+                            <Separator Margin="4,12" Background="#46424D" />
+                            <TextBlock Text="Форматирование" Foreground="{StaticResource SecondaryText}" Margin="6,0,0,8" />
+                            <WrapPanel>
+                                <Button Content="B" FontWeight="Bold" Click="Bold_Click" />
+                                <Button Content="I" FontStyle="Italic" Click="Italic_Click" />
+                                <Button Click="Underline_Click"><TextBlock Text="U" TextDecorations="Underline" /></Button>
+                            </WrapPanel>
+                            <TextBlock Text="Размер текста" Foreground="{StaticResource SecondaryText}" Margin="6,10,0,4" />
+                            <ComboBox x:Name="FontSizeBox" SelectionChanged="FontSizeBox_SelectionChanged">
+                                <ComboBoxItem Content="14" /><ComboBoxItem Content="18" IsSelected="True" />
+                                <ComboBoxItem Content="24" /><ComboBoxItem Content="32" /><ComboBoxItem Content="42" />
+                            </ComboBox>
+                            <TextBlock Text="Цвет" Foreground="{StaticResource SecondaryText}" Margin="6,10,0,4" />
+                            <ComboBox x:Name="NotebookColorBox" SelectionChanged="NotebookColorBox_SelectionChanged">
+                                <ComboBoxItem Content="Графит" Tag="#FF29262D" IsSelected="True" />
+                                <ComboBoxItem Content="Красный" Tag="#FFC74848" />
+                                <ComboBoxItem Content="Синий" Tag="#FF3266A8" />
+                                <ComboBoxItem Content="Зелёный" Tag="#FF3D7658" />
+                            </ComboBox>
+                            <TextBlock Text="Толщина пера" Foreground="{StaticResource SecondaryText}" Margin="6,10,0,4" />
+                            <Slider x:Name="NotebookPenSize" Minimum="1" Maximum="18" Value="3"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="NotebookPenSize_ValueChanged" />
+                        </StackPanel>
+
+                        <StackPanel x:Name="PlaneToolbar" Visibility="Collapsed">
+                            <TextBlock Text="Инструменты" Foreground="{StaticResource SecondaryText}" Margin="6,4,0,8" />
+                            <Button Content="Выбор и перемещение" Tag="Select" Click="PlaneTool_Click" />
+                            <Button Content="Перо" Tag="Ink" Click="PlaneTool_Click" />
+                            <Button Content="Ластик" Tag="Erase" Click="PlaneTool_Click" />
+                            <Button Content="Текст" Tag="Text" Click="PlaneTool_Click" />
+                            <Button Content="Прямоугольник" Tag="Rectangle" Click="PlaneTool_Click" />
+                            <Button Content="Эллипс" Tag="Ellipse" Click="PlaneTool_Click" />
+                            <Button Content="Лист для записей" Tag="NoteSheet" Click="PlaneTool_Click" />
+                            <Separator Margin="4,12" Background="#46424D" />
+                            <TextBlock Text="Масштаб" Foreground="{StaticResource SecondaryText}" Margin="6,0,0,6" />
+                            <TextBlock x:Name="ZoomText" Text="80%" Foreground="{StaticResource PrimaryText}"
+                                       FontSize="22" Margin="6,0,0,8" />
+                            <Button Content="100%  Ctrl+0" Click="ZoomReset_Click" />
+                            <Button Content="Показать всё  Ctrl+1" Click="ZoomFit_Click" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Column="1" Background="#111015">
+                    <ScrollViewer x:Name="NotebookScrollViewer" Visibility="Collapsed"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <Grid Margin="80,50">
+                            <Border x:Name="NotebookPaper" Width="800" Height="1100" Background="#FFFDF8"
+                                    CornerRadius="4" BorderBrush="#D8D0C4" BorderThickness="1"
+                                    HorizontalAlignment="Center" VerticalAlignment="Top">
+                                <Grid x:Name="NotebookPaperGrid">
+                                    <RichTextBox x:Name="NotebookTextEditor" Margin="70,80,70,60"
+                                                 Background="Transparent" BorderThickness="0" FontSize="18"
+                                                 Foreground="#29262D" AcceptsReturn="True" VerticalScrollBarVisibility="Hidden"
+                                                 TextChanged="NotebookTextEditor_TextChanged" />
+                                    <InkCanvas x:Name="NotebookInkCanvas" Background="Transparent"
+                                               EditingMode="None" StrokesReplaced="NotebookInkCanvas_StrokesChanged"
+                                               StrokeCollected="NotebookInkCanvas_StrokesChanged"
+                                               StrokeErased="NotebookInkCanvas_StrokesChanged"
+                                               PreviewMouseLeftButtonDown="InkCanvas_PreviewMouseLeftButtonDown" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+
+                    <Grid x:Name="PlaneWorkspace" Visibility="Collapsed" ClipToBounds="True"
+                          PreviewMouseWheel="PlaneWorkspace_PreviewMouseWheel"
+                          PreviewMouseDown="PlaneWorkspace_PreviewMouseDown"
+                          PreviewMouseUp="PlaneWorkspace_PreviewMouseUp"
+                          MouseMove="PlaneWorkspace_MouseMove">
+                        <ScrollViewer x:Name="PlaneScrollViewer" HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden" PanningMode="None">
+                            <Canvas x:Name="PlaneWorld" Width="12000" Height="12000" Background="#15141A"
+                                    MouseLeftButtonDown="PlaneWorld_MouseLeftButtonDown">
+                                <Canvas.LayoutTransform>
+                                    <ScaleTransform x:Name="PlaneScale" ScaleX="0.8" ScaleY="0.8" />
+                                </Canvas.LayoutTransform>
+                                <Canvas x:Name="TileLayer" Width="12000" Height="12000" IsHitTestVisible="True" />
+                                <InkCanvas x:Name="PlaneInkCanvas" Width="12000" Height="12000" Background="Transparent"
+                                           EditingMode="None" StrokesReplaced="PlaneInkCanvas_StrokesChanged"
+                                           StrokeCollected="PlaneInkCanvas_StrokesChanged"
+                                           StrokeErased="PlaneInkCanvas_StrokesChanged"
+                                           PreviewMouseLeftButtonDown="InkCanvas_PreviewMouseLeftButtonDown" />
+                                <Canvas x:Name="ElementLayer" Width="12000" Height="12000" Background="Transparent" />
+                            </Canvas>
+                        </ScrollViewer>
+                        <Border x:Name="Minimap" Width="210" Height="145" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="20" Background="#DE211F26" BorderBrush="#514D59" BorderThickness="1" CornerRadius="9">
+                            <Grid>
+                                <Canvas x:Name="MinimapCanvas" Margin="10,28,10,10" />
+                                <TextBlock Text="Карта плоскости" Foreground="{StaticResource SecondaryText}"
+                                           FontSize="11" Margin="10,7" VerticalAlignment="Top" />
+                                <Button Content="−" Width="27" Height="24" Padding="0" HorizontalAlignment="Right"
+                                        VerticalAlignment="Top" Margin="4" Click="ToggleMinimap_Click" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <Grid x:Name="CreateOverlay" Visibility="Collapsed" Background="#B0000000">
+            <Border Width="620" Background="{StaticResource PanelBackground}" CornerRadius="14" Padding="30"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Новый документ" FontSize="28" FontWeight="SemiBold"
+                               Foreground="{StaticResource PrimaryText}" />
+                    <TextBlock Text="Сначала выберите подходящий режим работы" Margin="0,5,0,20"
+                               Foreground="{StaticResource SecondaryText}" />
+                    <TextBlock Text="Название" Foreground="{StaticResource SecondaryText}" Margin="0,0,0,5" />
+                    <TextBox x:Name="NewDocumentName" Text="Новый документ" FontSize="16" />
+                    <Grid Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Margin="0,0,7,0" Background="{StaticResource PanelRaised}" CornerRadius="9" Padding="16">
+                            <StackPanel>
+                                <RadioButton x:Name="NotebookKindRadio" Content="Блокнот" IsChecked="True" GroupName="DocumentKind"
+                                             Foreground="{StaticResource PrimaryText}" FontSize="18" FontWeight="SemiBold"
+                                             Checked="DocumentKind_Changed" />
+                                <TextBlock Text="Один лист: текст и рисование без лишних инструментов."
+                                           Foreground="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="22,8,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Margin="7,0,0,0" Background="{StaticResource PanelRaised}" CornerRadius="9" Padding="16">
+                            <StackPanel>
+                                <RadioButton x:Name="PlaneKindRadio" Content="Плоскость" GroupName="DocumentKind"
+                                             Foreground="{StaticResource PrimaryText}" FontSize="18" FontWeight="SemiBold"
+                                             Checked="DocumentKind_Changed" />
+                                <TextBlock Text="Холсты, фигуры, большие записи, масштаб и свободная схема."
+                                           Foreground="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="22,8,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <StackPanel x:Name="NotebookTemplateOptions" Margin="0,18,0,0">
+                        <TextBlock Text="Вид листа" Foreground="{StaticResource SecondaryText}" />
+                        <ComboBox x:Name="NotebookTemplateBox" SelectedIndex="1">
+                            <ComboBoxItem Content="Чистый лист" Tag="Blank" />
+                            <ComboBoxItem Content="Лист в линейку" Tag="Lined" />
+                            <ComboBoxItem Content="Спираль сверху" Tag="SpiralTop" />
+                            <ComboBoxItem Content="Спираль снизу" Tag="SpiralBottom" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel x:Name="PlaneSizeOptions" Visibility="Collapsed" Margin="0,18,0,0">
+                        <TextBlock Text="Размер первого холста" Foreground="{StaticResource SecondaryText}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="PlaneWidthBox" Text="960" Width="120" Margin="0,6,8,0" />
+                            <TextBlock Text="×" Foreground="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+                            <TextBox x:Name="PlaneHeightBox" Text="680" Width="120" Margin="8,6,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                        <Button Content="Отмена" Click="CancelCreate_Click" />
+                        <Button Content="Создать" Background="{StaticResource Accent}" Click="CreateDocument_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
