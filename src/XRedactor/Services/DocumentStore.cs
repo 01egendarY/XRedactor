@@ -61,6 +61,21 @@ public sealed class DocumentStore
 
     public void Delete(string path) => File.Delete(path);
 
+    public string Rename(string path, string name)
+    {
+        var document = Load(path);
+        document.Name = name.Trim();
+        Validate(document);
+        var invalid = Path.GetInvalidFileNameChars();
+        var stem = new string(document.Name.Select(character => invalid.Contains(character) ? '_' : character).ToArray());
+        var requestedPath = Path.Combine(DirectoryPath, stem + ".xred");
+        var destination = string.Equals(path, requestedPath, StringComparison.OrdinalIgnoreCase)
+            ? path : CreateUniquePath(document.Name);
+        Save(document, path);
+        if (!string.Equals(path, destination, StringComparison.OrdinalIgnoreCase)) File.Move(path, destination);
+        return destination;
+    }
+
     private string CreateUniquePath(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();
@@ -117,5 +132,14 @@ public sealed record DocumentEntry(
     string Name,
     DocumentKind? Kind,
     DateTime ModifiedUtc,
-    bool IsDamaged = false);
-
+    bool IsDamaged = false)
+{
+    public string KindLabel => IsDamaged
+        ? "Поврежден"
+        : Kind switch
+        {
+            DocumentKind.Notebook => "Блокнот",
+            DocumentKind.Plane => "Плоскость",
+            _ => "Неизвестно"
+        };
+}

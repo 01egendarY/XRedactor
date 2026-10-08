@@ -1,18 +1,21 @@
-<Application x:Class="XRedactor.App"
+﻿<Application x:Class="XRedactor.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <SolidColorBrush x:Key="AppBackground" Color="#17161B" />
-        <SolidColorBrush x:Key="PanelBackground" Color="#211F26" />
-        <SolidColorBrush x:Key="PanelRaised" Color="#2A2830" />
-        <SolidColorBrush x:Key="PrimaryText" Color="#F5F1EB" />
-        <SolidColorBrush x:Key="SecondaryText" Color="#A9A4AD" />
-        <SolidColorBrush x:Key="Accent" Color="#D85050" />
+        <SolidColorBrush x:Key="AppBackground" Color="#17161B" po:Freeze="False" />
+        <SolidColorBrush x:Key="PanelBackground" Color="#211F26" po:Freeze="False" />
+        <SolidColorBrush x:Key="PanelRaised" Color="#2A2830" po:Freeze="False" />
+        <SolidColorBrush x:Key="WorkspaceBackground" Color="#111015" po:Freeze="False" />
+        <SolidColorBrush x:Key="PlaneWorldBackground" Color="#15141A" po:Freeze="False" />
+        <SolidColorBrush x:Key="PrimaryText" Color="#F5F1EB" po:Freeze="False" />
+        <SolidColorBrush x:Key="SecondaryText" Color="#A9A4AD" po:Freeze="False" />
+        <SolidColorBrush x:Key="Accent" Color="#D85050" po:Freeze="False" />
 
         <Style TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource PrimaryText}" />
-            <Setter Property="Background" Value="{StaticResource PanelRaised}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="Margin" Value="3" />
@@ -38,11 +41,11 @@
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="{StaticResource PrimaryText}" />
-            <Setter Property="Background" Value="{StaticResource PanelRaised}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
             <Setter Property="BorderBrush" Value="#46424D" />
             <Setter Property="Padding" Value="10,8" />
-            <Setter Property="CaretBrush" Value="White" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Accent}" />
         </Style>
 
         <Style TargetType="ComboBox">
@@ -53,4 +56,3 @@
         </Style>
     </Application.Resources>
 </Application>
-

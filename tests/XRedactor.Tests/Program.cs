@@ -1,3 +1,4 @@
+using System.IO;
 using XRedactor.Models;
 using XRedactor.Services;
 
@@ -15,6 +16,7 @@ try
         {
             TileWidth = 900,
             TileHeight = 600,
+            WorldOrigin = 10000,
             Tiles =
             [
                 new CanvasTileData { Column = 0, Row = 0 },
@@ -27,7 +29,10 @@ try
                     Kind = ElementKind.NoteSheet,
                     X = 125,
                     Y = -70,
-                    Text = "Unicode survives: Привет"
+                    Text = "Unicode survives: Привет",
+                    Template = NotebookTemplate.Ruled,
+                    FontFamily = "Consolas",
+                    FontSize = 30
                 }
             ]
         }
@@ -42,6 +47,9 @@ try
     Assert(loaded.Kind == DocumentKind.Plane, "Document kind changed during serialization.");
     Assert(loaded.Plane?.Tiles.Count == 2, "Canvas tiles were not restored.");
     Assert(loaded.Plane?.Elements.Single().Text == "Unicode survives: Привет", "Element text was not restored.");
+    Assert(loaded.Plane?.WorldOrigin == 10000, "Expanded plane origin was not restored.");
+    Assert(loaded.Plane?.Elements.Single().Template == NotebookTemplate.Ruled, "Paper template was not restored.");
+    Assert(loaded.Plane?.Elements.Single().FontFamily == "Consolas", "Font family was not restored.");
 
     var invalid = new XRedDocument
     {
@@ -60,7 +68,13 @@ try
     }
     Assert(rejected, "Invalid canvas dimensions were accepted.");
 
-    Console.WriteLine("PASS: document round-trip, atomic save, Unicode, and validation.");
+    path = store.Rename(path!, testName + " renamed");
+    Assert(Path.GetFileNameWithoutExtension(path) == testName + " renamed", "Rename must update the filename.");
+    Assert(store.Load(path).Id == source.Id, "Rename must preserve document identity.");
+    Assert(store.Load(path).Name == testName + " renamed", "Rename must update document title.");
+
+    EditorRegressionTests.Run();
+    Console.WriteLine("PASS: document round-trip, atomic save, Unicode, validation, and editor regressions.");
 }
 finally
 {

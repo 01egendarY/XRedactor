@@ -14,7 +14,9 @@ public enum NotebookTemplate
 {
     Blank,
     Lined,
+    Ruled,
     SpiralTop,
+    SpiralLeft,
     SpiralBottom
 }
 
@@ -42,12 +44,15 @@ public sealed class XRedDocument
 public sealed class NotebookData
 {
     public NotebookTemplate Template { get; set; } = NotebookTemplate.Lined;
+    public double FontSize { get; set; }
+    public string FontFamily { get; set; } = "Segoe UI";
     public string RichTextRtfBase64 { get; set; } = string.Empty;
     public List<InkStrokeData> Strokes { get; set; } = [];
 }
 
 public sealed class PlaneData
 {
+    public double WorldOrigin { get; set; } = 6000;
     public double TileWidth { get; set; } = 960;
     public double TileHeight { get; set; } = 680;
     public double Zoom { get; set; } = 0.8;
@@ -70,6 +75,7 @@ public sealed class CanvasElementData
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public ElementKind Kind { get; set; }
+    public NotebookTemplate Template { get; set; } = NotebookTemplate.Lined;
     public double X { get; set; }
     public double Y { get; set; }
     public double Width { get; set; } = 240;
@@ -80,6 +86,7 @@ public sealed class CanvasElementData
     public string Text { get; set; } = string.Empty;
     public string TextColor { get; set; } = "#FF242128";
     public double FontSize { get; set; } = 18;
+    public string FontFamily { get; set; } = "Segoe UI";
     public bool IsBold { get; set; }
     public bool IsItalic { get; set; }
     public bool IsUnderlined { get; set; }
@@ -100,4 +107,3 @@ public sealed class InkPointData
     public double Y { get; set; }
     public float Pressure { get; set; } = 0.5f;
 }
-

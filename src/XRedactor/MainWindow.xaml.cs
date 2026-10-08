@@ -1,9 +1,12 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using XRedactor.Models;
 using XRedactor.Services;
 
@@ -24,6 +27,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        NotebookTextEditor.LostKeyboardFocus += NotebookTextEditor_LostKeyboardFocus;
+        foreach (var button in FindVisualChildren<Button>(NotebookToolbar).Concat(FindVisualChildren<Button>(PlaneToolbar)).Concat(FindVisualChildren<Button>(ContextToolbar)))
+            button.Focusable = false;
+        DataObject.AddPastingHandler(NotebookTextEditor, NotebookTextEditor_Pasting);
+        ThemeBox.SelectionChanged += ThemeBox_SelectionChanged;
+        Activated += (_, _) =>
+        {
+            if (_selectedTheme == "System") { ApplyTheme("System"); RefreshThemeDependentVisuals(); }
+        };
+
         try
         {
             _store = new DocumentStore();
@@ -37,12 +50,14 @@ public partial class MainWindow : Window
             throw;
         }
 
-        _autosaveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _autosaveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(_autosaveIntervalSeconds) };
         _autosaveTimer.Tick += (_, _) =>
         {
             _autosaveTimer.Stop();
             SaveCurrentDocument(false);
         };
+
+        InitializePersistentSettings();
 
         StorageLocationText.Text = $"Файлы: {_store.DirectoryPath}";
         RefreshDocumentList();
@@ -65,6 +80,123 @@ public partial class MainWindow : Window
     private void CancelCreate_Click(object sender, RoutedEventArgs e)
     {
         CreateOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowSettings_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void CloseSettings_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ThemeBox.SelectedItem is ComboBoxItem { Tag: string theme })
+        {
+            _selectedTheme = theme;
+            ApplyTheme(theme);
+            RefreshThemeDependentVisuals();
+            PersistSettings();
+        }
+    }
+
+    private void ApplyTheme(string theme)
+    {
+        if (theme == "System")
+        {
+            theme = IsSystemDarkTheme() ? "Black" : "White";
+        }
+        var palette = theme switch
+        {
+            "White" => (
+                App: "#FFF7F3EC",
+                Panel: "#FFFFFFFF",
+                Raised: "#FFF1ECE3",
+                Workspace: "#FFEDE8E0",
+                World: "#FFE5DFD4",
+                Primary: "#FF242128",
+                Secondary: "#FF6E6873",
+                Accent: "#FFB85454"),
+            "Black" => (
+                App: "#FF08080A",
+                Panel: "#FF111114",
+                Raised: "#FF1B1B20",
+                Workspace: "#FF09090D",
+                World: "#FF0D0D12",
+                Primary: "#FFF5F1EB",
+                Secondary: "#FFAAA5AE",
+                Accent: "#FFE45D5D"),
+            "Gray" => (
+                App: "#FF1F2024",
+                Panel: "#FF2A2B31",
+                Raised: "#FF363740",
+                Workspace: "#FF18191D",
+                World: "#FF202127",
+                Primary: "#FFF4F1EC",
+                Secondary: "#FFBDB8C2",
+                Accent: "#FFCF6A55"),
+            "DarkBlue" => (
+                App: "#FF101822",
+                Panel: "#FF172333",
+                Raised: "#FF223247",
+                Workspace: "#FF0B121B",
+                World: "#FF101A27",
+                Primary: "#FFF2F6FF",
+                Secondary: "#FFAEB9C9",
+                Accent: "#FF5D8CFF"),
+            _ => (
+                App: "#FF17131E",
+                Panel: "#FF241F2D",
+                Raised: "#FF30283B",
+                Workspace: "#FF111015",
+                World: "#FF15141A",
+                Primary: "#FFF8F2FF",
+                Secondary: "#FFB9AFC7",
+                Accent: "#FF9A6CFF")
+        };
+
+        SetBrush("AppBackground", palette.App);
+        SetBrush("PanelBackground", palette.Panel);
+        SetBrush("PanelRaised", palette.Raised);
+        SetBrush("WorkspaceBackground", palette.Workspace);
+        SetBrush("PlaneWorldBackground", palette.World);
+        SetBrush("PrimaryText", palette.Primary);
+        SetBrush("SecondaryText", palette.Secondary);
+        SetBrush("Accent", palette.Accent);
+    }
+
+    private static void SetBrush(string key, string color)
+    {
+        Application.Current.Resources[key] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+    }
+
+    private void RefreshThemeDependentVisuals()
+    {
+        if (NotebookTextModeButton is not null)
+        {
+            SetNotebookMode(_notebookMode);
+            UpdateNotebookFormattingButtons();
+        }
+
+        if (PlaneToolbar is not null)
+        {
+            UpdatePlaneToolButtons();
+            UpdatePlaneFormattingButtons();
+            if (_selectedElementView is not null)
+            {
+                SetElementSelectionVisual(_selectedElementView, true);
+            }
+        }
+
+        if (_currentDocument?.Kind == DocumentKind.Plane)
+        {
+            RenderTiles();
+            RenderElements();
+            RenderMinimap();
+        }
     }
 
     private void DocumentKind_Changed(object sender, RoutedEventArgs e)
@@ -97,7 +229,7 @@ public partial class MainWindow : Window
             {
                 Name = name,
                 Kind = DocumentKind.Notebook,
-                Notebook = new NotebookData { Template = template }
+                Notebook = new NotebookData { Template = template, FontSize = FontSizing.GetDefaultDisplayFontSize(template) }
             };
         }
         else
@@ -106,7 +238,7 @@ public partial class MainWindow : Window
                 !double.TryParse(PlaneHeightBox.Text, out var height) ||
                 width is < 320 or > 4000 || height is < 240 or > 4000)
             {
-                MessageBox.Show("Размер холста: ширина 320–4000, высота 240–4000.",
+                MessageBox.Show("Размер холста: ширина 320-4000, высота 240-4000.",
                     "XRedactor", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -160,13 +292,19 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenDocument(XRedDocument document, string path)
+    private void OpenDocument(XRedDocument document, string path, bool resetHistory = true, bool fitPlaneOnOpen = true)
     {
         _isLoading = true;
         _currentDocument = document;
         _currentPath = path;
-        _undoHistory.Clear();
-        _redoHistory.Clear();
+        if (resetHistory)
+        {
+            _undoHistory.Clear();
+            _redoHistory.Clear();
+        }
+
+        _inkSnapshotCaptured = false;
+        _notebookTextSnapshotCaptured = false;
         EditorTitle.Text = document.Name;
         EditorKindLabel.Text = document.Kind == DocumentKind.Notebook ? "Блокнот" : "Плоскость";
         HomeView.Visibility = Visibility.Collapsed;
@@ -186,7 +324,7 @@ public partial class MainWindow : Window
             PlaneToolbar.Visibility = Visibility.Visible;
             NotebookScrollViewer.Visibility = Visibility.Collapsed;
             PlaneWorkspace.Visibility = Visibility.Visible;
-            ConfigurePlane(document.Plane!);
+            ConfigurePlane(document.Plane!, fitPlaneOnOpen && _fitPlaneOnOpen);
         }
 
         _isDirty = false;
@@ -273,7 +411,10 @@ public partial class MainWindow : Window
         _isDirty = true;
         SaveStatusText.Text = "Есть изменения";
         _autosaveTimer.Stop();
-        _autosaveTimer.Start();
+        if (_autosaveEnabled)
+        {
+            _autosaveTimer.Start();
+        }
     }
 
     private void PushUndoSnapshot()
@@ -285,16 +426,23 @@ public partial class MainWindow : Window
 
         CaptureActiveEditor();
         _undoHistory.Push(JsonSerializer.Serialize(_currentDocument, _historyJsonOptions));
-        if (_undoHistory.Count > 60)
-        {
-            var keep = _undoHistory.Reverse().Skip(1).ToArray();
-            _undoHistory.Clear();
-            foreach (var item in keep.Reverse())
-            {
-                _undoHistory.Push(item);
-            }
-        }
+        TrimUndoHistory();
         _redoHistory.Clear();
+    }
+
+    private void TrimUndoHistory()
+    {
+        if (_undoHistory.Count <= 60)
+        {
+            return;
+        }
+
+        var newestItemsInOldestFirstOrder = _undoHistory.Take(60).Reverse().ToArray();
+        _undoHistory.Clear();
+        foreach (var item in newestItemsInOldestFirstOrder)
+        {
+            _undoHistory.Push(item);
+        }
     }
 
     private void UndoDocumentAction()
@@ -305,8 +453,41 @@ public partial class MainWindow : Window
         }
 
         CaptureActiveEditor();
-        _redoHistory.Push(JsonSerializer.Serialize(_currentDocument, _historyJsonOptions));
+        var current = JsonSerializer.Serialize(_currentDocument, _historyJsonOptions);
+        while (_undoHistory.TryPeek(out var candidate) && SameHistoryContent(current, candidate)) _undoHistory.Pop();
+        if (_undoHistory.Count == 0) return;
+        _redoHistory.Push(current);
         RestoreSnapshot(_undoHistory.Pop());
+    }
+
+    private static bool SameHistoryContent(string first, string second)
+    {
+        static JsonNode? Content(string json)
+        {
+            var node = JsonNode.Parse(json);
+            if (node is JsonObject document)
+            {
+                document.Remove("ModifiedUtc");
+                if (document["Plane"] is JsonObject plane)
+                {
+                    var origin = plane["WorldOrigin"]?.GetValue<double>() ?? 6000;
+                    if (plane["Strokes"] is JsonArray strokes)
+                        foreach (var stroke in strokes.OfType<JsonObject>())
+                            if (stroke["Points"] is JsonArray points)
+                                foreach (var point in points.OfType<JsonObject>())
+                                {
+                                    point["X"] = Math.Round((point["X"]?.GetValue<double>() ?? 0) - origin, 6);
+                                    point["Y"] = Math.Round((point["Y"]?.GetValue<double>() ?? 0) - origin, 6);
+                                }
+                    plane.Remove("WorldOrigin");
+                    plane.Remove("Zoom");
+                    plane.Remove("HorizontalOffset");
+                    plane.Remove("VerticalOffset");
+                }
+            }
+            return node;
+        }
+        return JsonNode.DeepEquals(Content(first), Content(second));
     }
 
     private void RedoDocumentAction()
@@ -318,6 +499,7 @@ public partial class MainWindow : Window
 
         CaptureActiveEditor();
         _undoHistory.Push(JsonSerializer.Serialize(_currentDocument, _historyJsonOptions));
+        TrimUndoHistory();
         RestoreSnapshot(_redoHistory.Pop());
     }
 
@@ -329,12 +511,51 @@ public partial class MainWindow : Window
             return;
         }
 
-        var undoItems = _undoHistory.ToArray();
-        var redoItems = _redoHistory.ToArray();
+        var notebookMode = _notebookMode;
+        var planeTool = _planeTool;
+        var notebookEditing = NotebookTextEditor.IsKeyboardFocusWithin;
+        var notebookCaret = NotebookTextEditor.Document.ContentStart.GetOffsetToPosition(NotebookTextEditor.CaretPosition);
+        var notebookHorizontal = NotebookScrollViewer.HorizontalOffset;
+        var notebookVertical = NotebookScrollViewer.VerticalOffset;
+        var planeEditing = TryCaptureActiveElementTextEdit(out var planeCaret);
+        if (restored.Plane is not null && _currentDocument?.Plane is not null)
+        {
+            restored.Plane.Zoom = PlaneScale.ScaleX;
+            var originDelta = restored.Plane.WorldOrigin - WorldOrigin;
+            restored.Plane.HorizontalOffset = PlaneScrollViewer.HorizontalOffset + originDelta * PlaneScale.ScaleX;
+            restored.Plane.VerticalOffset = PlaneScrollViewer.VerticalOffset + originDelta * PlaneScale.ScaleY;
+        }
+        var selectedElementId = _selectedElement?.Id;
         _currentDocument = restored;
-        OpenDocument(restored, _currentPath!);
-        foreach (var item in undoItems.Reverse()) _undoHistory.Push(item);
-        foreach (var item in redoItems.Reverse()) _redoHistory.Push(item);
+        OpenDocument(restored, _currentPath!, resetHistory: false, fitPlaneOnOpen: false);
+
+        if (restored.Kind == DocumentKind.Notebook)
+        {
+            SetNotebookMode(notebookMode);
+            if (notebookEditing)
+            {
+                NotebookTextEditor.Focus();
+                NotebookTextEditor.CaretPosition = NotebookTextEditor.Document.ContentStart.GetPositionAtOffset(Math.Min(notebookCaret, NotebookTextEditor.Document.ContentStart.GetOffsetToPosition(NotebookTextEditor.Document.ContentEnd))) ?? NotebookTextEditor.Document.ContentEnd;
+            }
+            Dispatcher.BeginInvoke(() =>
+            {
+                NotebookScrollViewer.ScrollToHorizontalOffset(notebookHorizontal);
+                NotebookScrollViewer.ScrollToVerticalOffset(notebookVertical);
+            });
+        }
+        else
+        {
+            SetPlaneTool(planeTool);
+            if (selectedElementId is Guid id &&
+                restored.Plane?.Elements.FirstOrDefault(element => element.Id == id) is { } element)
+            {
+                SelectElement(element);
+                RestoreActiveElementTextEdit(planeEditing, planeCaret);
+            }
+        }
+
+        _notebookTextSnapshotCaptured = false;
+        _inkSnapshotCaptured = false;
         MarkDirty();
     }
 
@@ -343,6 +564,13 @@ public partial class MainWindow : Window
         if (CreateOverlay.Visibility == Visibility.Visible && e.Key == Key.Escape)
         {
             CreateOverlay.Visibility = Visibility.Collapsed;
+            e.Handled = true;
+            return;
+        }
+
+        if (SettingsOverlay.Visibility == Visibility.Visible && e.Key == Key.Escape)
+        {
+            SettingsOverlay.Visibility = Visibility.Collapsed;
             e.Handled = true;
             return;
         }
@@ -359,13 +587,31 @@ public partial class MainWindow : Window
             SaveCurrentDocument(true);
             e.Handled = true;
         }
-        else if (control && e.Key == Key.Z && !NotebookTextEditor.IsKeyboardFocusWithin)
+        else if (control && e.Key == Key.Z)
         {
-            if (shift) RedoDocumentAction(); else UndoDocumentAction();
+            if (ShouldLetTextEditorHandleUndo())
+            {
+                return;
+            }
+
+            if (shift)
+            {
+                RedoDocumentAction();
+            }
+            else
+            {
+                UndoDocumentAction();
+            }
+
             e.Handled = true;
         }
-        else if (control && e.Key == Key.Y && !NotebookTextEditor.IsKeyboardFocusWithin)
+        else if (control && e.Key == Key.Y)
         {
+            if (ShouldLetTextEditorHandleUndo())
+            {
+                return;
+            }
+
             RedoDocumentAction();
             e.Handled = true;
         }
@@ -381,14 +627,42 @@ public partial class MainWindow : Window
         }
         else if (_currentDocument?.Kind == DocumentKind.Plane && e.Key == Key.Delete)
         {
+            if (Keyboard.FocusedElement is TextBox { IsReadOnly: false })
+            {
+                return;
+            }
+
             DeleteSelectedElement();
             e.Handled = true;
         }
+        else if (control && (e.Key is Key.B or Key.I or Key.U) && _currentDocument is not null)
+        {
+            if (_currentDocument?.Kind == DocumentKind.Notebook)
+            {
+                if (e.Key == Key.B) Bold_Click(this, new RoutedEventArgs());
+                else if (e.Key == Key.I) Italic_Click(this, new RoutedEventArgs());
+                else Underline_Click(this, new RoutedEventArgs());
+            }
+            else if (_currentDocument?.Kind == DocumentKind.Plane)
+            {
+                if (e.Key == Key.B) PlaneBold_Click(this, new RoutedEventArgs());
+                else if (e.Key == Key.I) PlaneItalic_Click(this, new RoutedEventArgs());
+                else PlaneUnderline_Click(this, new RoutedEventArgs());
+            }
+
+            e.Handled = true;
+        }
+    }
+
+    private bool ShouldLetTextEditorHandleUndo()
+    {
+        return Keyboard.FocusedElement is TextBox { Tag: not CanvasElementData, IsReadOnly: false };
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         _autosaveTimer.Stop();
+        PersistSettings();
         if (_isDirty)
         {
             SaveCurrentDocument(false);
