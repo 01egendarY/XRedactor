@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="XRedactor" Height="820" Width="1280" MinHeight="640" MinWidth="960"
+        Title="XRedactor" Icon="Assets/XRedactor.ico" Height="820" Width="1280" MinHeight="640" MinWidth="960"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource AppBackground}"
         FontFamily="Segoe UI" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown">
     <Grid Background="{DynamicResource AppBackground}">
