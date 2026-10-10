@@ -2,6 +2,8 @@
 
 XRedactor is a local-first Windows notebook and visual canvas editor.
 
+Current version: **1.0**. Release details are recorded in [CHANGELOG.md](CHANGELOG.md).
+
 ## Repository layout
 
 - `src/XRedactor` - WPF/.NET source code.
@@ -16,8 +18,8 @@ dotnet build XRedactor.slnx
 dotnet publish src/XRedactor/XRedactor.csproj -c Release -r win-x64 --self-contained true -o src/XRedactor/bin/Release/net10.0-windows/win-x64
 ```
 
-Notebook font sizes use cells for grid paper, lines for ruled paper, and points for blank/spiral paper. The editable size field accepts custom values; plus/minus buttons adjust it quickly. Plane note sheets expose their paper and font options when selected; shape tools open in a horizontal context panel.
+Run checks with `dotnet run --project tests/XRedactor.Tests -c Release`. See [test documentation](tests/XRedactor.Tests/README.md) for coverage and limitations.
 
-Settings include system/light/dark themes, autosave timing, fit-on-open, zoom speed, canvas deletion confirmation, and a resizable document sidebar. Documents can be renamed from the home screen, including their `.xred` filenames. Ink is restricted to canvas tiles. Keyboard shortcuts include Ctrl+B/I/U, Ctrl+Z/Y, Ctrl+S, and Ctrl+0/1.
+## Release convention
 
-Run regression checks with `dotnet run --project tests/XRedactor.Tests -c Release`. These cover storage and in-process WPF editor behavior, including mixed-action undo, typing groups, font sizes, ink clipping, zoom anchors, and expansion in both directions. They also render UI previews beside the test executable.
+Use only `Version <number>` as the commit message, for example `Version 1.0`. Record changes in `CHANGELOG.md`, grouped by application version, with the newest version first. Updates within the current version belong to its existing section. Do not rewrite published history or move existing version tags for cosmetic changes.
