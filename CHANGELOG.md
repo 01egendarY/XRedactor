@@ -1,37 +1,43 @@
-# История изменений XRedactor
+# Changelog
 
-Изменения сгруппированы по версии приложения. Новые версии добавляются сверху; обновления текущей версии дополняют её раздел.
+Changes are grouped by application version, with the newest version first. Updates within the current version are added to its existing section.
 
 ## 1.0
 
-### Добавлено
+### Added
 
-- Два вида документов: отдельный блокнот для текста и рисования и плоскость с несколькими холстами, фигурами и листами для записей.
-- Хранение каждого документа в отдельном файле `.xred` в папке `Notebooks` рядом с программой, автоматическое и ручное сохранение.
-- Чистая, клетчатая и линейчатая бумага, блокноты со спиралью сверху или слева.
-- Размер текста в клетках или строках для соответствующих листов и в пунктах для чистой бумаги и спиральных блокнотов. Ручной ввод размера и кнопки увеличения и уменьшения.
-- Форматирование текста, выбор цвета и толщины пера, ластик с областью стирания.
-- Верхняя панель фигур с заливкой, цветом и толщиной обводки; отдельные параметры бумаги, шрифта и размера текста для блокнотов на плоскости.
-- Расширение плоскости соседними холстами, перемещение и изменение размера объектов, инструмент удаления холста.
-- Карта с объектами, рисунками и видимой областью, переходом по щелчку и перемещением перетаскиванием.
-- Переименование документов и их файлов, изменение ширины списка документов.
-- Пять тем интерфейса и системная тема, параметры автосохранения, скорости масштабирования, фокусировки при открытии и подтверждения удаления холстов.
-- Сочетания клавиш для сохранения, отмены и повтора, форматирования и управления масштабом.
-- Иконка приложения с листами и красным штрихом для исполняемых файлов, окна и панели задач.
-- Автоматические проверки хранения документов и поведения WPF-редактора.
+- Two document modes: a single-page notebook for text and handwriting, and a spatial plane with connected canvases, shapes, and note sheets.
+- Individual `.xred` document files in the `Notebooks` folder beside the executable, with automatic and manual saving.
+- Blank, grid, and ruled paper, plus notebooks with top or left spiral binding.
+- Font sizes measured in cells for grid paper, lines for ruled paper, and points for blank and spiral paper. Editable size fields and increment/decrement buttons.
+- Text formatting, pen color and thickness controls, and a point eraser.
+- A horizontal shape toolbar with fill and outline controls, plus paper, font family, and font size controls for note sheets.
+- Adjacent canvas expansion, object movement and resizing, and a dedicated canvas deletion tool.
+- A collapsible minimap showing canvases, objects, ink, and the viewport, with click and drag navigation.
+- Document and filename renaming, and a resizable document sidebar.
+- Five interface themes and a system theme, configurable autosave, zoom speed, fit-on-open, and canvas deletion confirmation.
+- Keyboard shortcuts for saving, undo/redo, text formatting, and zoom.
+- A paper-and-red-stroke application icon for executables, the application window, and the taskbar.
+- Automated storage and in-process WPF editor regression checks.
 
-### Исправлено
+### Changed
 
-- Ошибка запуска при применении темы интерфейса.
-- Перемещение камеры при работе с форматированием текста.
-- Порядок отмены текстовых правок, рисунков и изменений объектов; группировка ввода по границам слов и паузам.
-- Отмена изменения размера выделенного текста, сохранение позиции курсора и вида документа при восстановлении действий.
-- Добавление соседних холстов и расположение кнопок за их границами.
-- Рисование вне холстов, лишние координаты и кнопки удаления на самих холстах.
-- Пересчёт камеры при масштабировании и фиксированные границы рабочей области при расширении плоскости.
-- Работа карты и отображение видимой области.
-- Подсказки в пустых текстовых блоках и лишний начальный текст в листах для записей.
+- Standardized repository documentation in English while retaining the Russian application interface.
+- Moved version-specific release notes to this changelog and retained version-only commit messages.
+- Updated the implementation specification to distinguish current behavior from planned features.
 
-### Проверка
+### Fixed
 
-Проверены сохранение и загрузка документов, Unicode, переименование, размеры шрифта, группировка ввода, смешанная отмена действий, ограничение рисунков холстами, сохранение точки масштабирования и расширение плоскости. Полный ручной прогон живого интерфейса мышью и клавиатурой остаётся отдельным этапом проверки.
+- A startup crash caused by interface theme resources.
+- Unintended viewport movement when changing text formatting.
+- Undo ordering across text edits, ink strokes, and object changes, with typing grouped by word boundaries and idle pauses.
+- Undo for selected-text font size changes, and caret and viewport preservation when restoring editor state.
+- Neighboring canvas creation and placement of add buttons outside canvas boundaries.
+- Drawing outside canvases, unnecessary coordinate labels, and inline canvas deletion buttons.
+- Viewport calculations during zoom and fixed workspace boundaries during plane expansion.
+- Minimap navigation and viewport display.
+- Placeholder behavior in empty text objects and unwanted initial text in note sheets.
+
+### Validation
+
+Regression checks cover document round-trips, Unicode, renaming, font sizes, typing groups, mixed-action undo, ink clipping, zoom anchors, and plane expansion. A complete manual mouse-and-keyboard pass in a live application window remains a separate validation step.
